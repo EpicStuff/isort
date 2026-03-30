@@ -638,9 +638,13 @@ def _with_straight_imports(
 
     as_imports = any(module in parsed.as_map["straight"] for module in straight_modules)
 
-    # combine_straight_imports combines bare imports. If combine_as_imports is enabled it can
-    # also combine straight aliases (for example: `import a as b, c as d`).
-    if config.combine_straight_imports and (not as_imports or config.combine_as_imports):
+    # combine_straight_imports combines bare imports. combine_as_imports can also combine
+    # straight aliases (for example: `import a as b, c as d`).
+    should_combine_straight_imports = (
+        (config.combine_straight_imports and (not as_imports or config.combine_as_imports))
+        or (config.combine_as_imports and as_imports)
+    )
+    if should_combine_straight_imports:
         if not straight_modules:
             return []
 
