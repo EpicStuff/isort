@@ -5396,6 +5396,33 @@ def test_combine_straight_imports() -> None:
         test_input, combine_straight_imports=True, combine_as_imports=True
     ) == "import dateparser, pandas as pd\n"
 
+    # regression: a mixed import block should keep non-aliased imports when combining
+    test_input = (
+        "import asyncio\n"
+        "\n"
+        "import dateparser\n"
+        "import pandas as pd\n"
+        "from epicstuff import Dict, rich_try\n"
+        "from nicegui import ui\n"
+        "from nicegui_aggrid import AgDict\n"
+        "\n"
+        "from src.utils import load_data, memory, request_api, settings\n"
+        "from .cards.up_time import load as up_time\n"
+        "from .stuff import about, create_tab\n"
+    )
+    assert isort.code(test_input, combine_straight_imports=True, combine_as_imports=True) == (
+        "import asyncio\n"
+        "\n"
+        "import dateparser, pandas as pd\n"
+        "from epicstuff import Dict, rich_try\n"
+        "from nicegui import ui\n"
+        "from nicegui_aggrid import AgDict\n"
+        "from src.utils import load_data, memory, request_api, settings\n"
+        "\n"
+        "from .cards.up_time import load as up_time\n"
+        "from .stuff import about, create_tab\n"
+    )
+
 
 def test_find_imports_in_code() -> None:
     test_input = (

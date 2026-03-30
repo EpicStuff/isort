@@ -654,7 +654,10 @@ def _with_straight_imports(
         for module in straight_modules:
             if module in parsed.categorized_comments["above"]["straight"]:
                 above_comments.extend(parsed.categorized_comments["above"]["straight"].pop(module))
-            if parsed.imports[section]["straight"][module]:
+            # Keep bare modules in combined output whenever no aliases were recorded for that
+            # module. This avoids dropping plain imports if parser state for the bare flag is
+            # unexpectedly false.
+            if parsed.imports[section]["straight"][module] or module not in parsed.as_map["straight"]:
                 combined_imports.append(module)
                 if module in parsed.categorized_comments["straight"]:
                     inline_comments.extend(parsed.categorized_comments["straight"][module])
