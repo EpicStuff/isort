@@ -5376,6 +5376,53 @@ def test_combine_straight_imports() -> None:
         "import sys, os, math\n\nimport a, b\n"
     )
 
+    # test to ensure that aliased straight imports are combined when combine_as_imports is enabled
+    test_input = "import a as b\nimport c as d\n"
+    assert isort.code(
+        test_input, combine_straight_imports=True, combine_as_imports=True
+    ) == "import a as b, c as d\n"
+
+    # test to ensure that mixed straight + aliased imports are combined when combine_as_imports
+    # is enabled
+    test_input = "import a\nimport b as c\n"
+    assert isort.code(
+        test_input, combine_straight_imports=True, combine_as_imports=True
+    ) == "import a, b as c\n"
+
+    # regression: mixed third-party straight imports should not drop bare imports when aliases
+    # are present when both combine options are enabled
+    test_input = "import dateparser\nimport pandas as pd\n"
+    assert isort.code(
+        test_input, combine_straight_imports=True, combine_as_imports=True
+    ) == "import dateparser, pandas as pd\n"
+
+    # regression: a mixed import block should keep non-aliased imports when combining
+    test_input = (
+        "import asyncio\n"
+        "\n"
+        "import dateparser\n"
+        "import pandas as pd\n"
+        "from epicstuff import Dict, rich_try\n"
+        "from nicegui import ui\n"
+        "from nicegui_aggrid import AgDict\n"
+        "\n"
+        "from src.utils import load_data, memory, request_api, settings\n"
+        "from .cards.up_time import load as up_time\n"
+        "from .stuff import about, create_tab\n"
+    )
+    assert isort.code(test_input, combine_straight_imports=True, combine_as_imports=True) == (
+        "import asyncio\n"
+        "\n"
+        "import dateparser, pandas as pd\n"
+        "from epicstuff import Dict, rich_try\n"
+        "from nicegui import ui\n"
+        "from nicegui_aggrid import AgDict\n"
+        "from src.utils import load_data, memory, request_api, settings\n"
+        "\n"
+        "from .cards.up_time import load as up_time\n"
+        "from .stuff import about, create_tab\n"
+    )
+
 
 def test_find_imports_in_code() -> None:
     test_input = (

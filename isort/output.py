@@ -638,24 +638,38 @@ def _with_straight_imports(
 
     as_imports = any(module in parsed.as_map["straight"] for module in straight_modules)
 
-    # combine_straight_imports only works for bare imports, 'as' imports not included
-    if config.combine_straight_imports and not as_imports:
+    # combine_straight_imports combines bare imports. If combine_as_imports is enabled it can
+    # also combine straight aliases (for example: `import a as b, c as d`).
+    should_combine_straight_imports = config.combine_straight_imports and (
+        not as_imports or config.combine_as_imports
+    )
+    if should_combine_straight_imports:
         if not straight_modules:
             return []
 
         above_comments: list[str] = []
         inline_comments: list[str] = []
+        combined_imports: list[str] = []
 
         for module in straight_modules:
             if module in parsed.categorized_comments["above"]["straight"]:
                 above_comments.extend(parsed.categorized_comments["above"]["straight"].pop(module))
-            if module in parsed.categorized_comments["straight"]:
-                inline_comments.extend(parsed.categorized_comments["straight"][module])
-
-        combined_straight_imports = ", ".join(straight_modules)
+            # Keep bare modules in combined output whenever no aliases were recorded for that
+            # module. This avoids dropping plain imports if parser state for the bare flag is
+            # unexpectedly false.
+            if parsed.imports[section]["straight"][module] or module not in parsed.as_map["straight"]:
+                combined_imports.append(module)
+                if module in parsed.categorized_comments["straight"]:
+                    inline_comments.extend(parsed.categorized_comments["straight"][module])
+            for as_import in parsed.as_map["straight"].get(module, ()):
+                import_key = f"{module} as {as_import}"
+                combined_imports.append(import_key)
+                if import_key in parsed.categorized_comments["straight"]:
+                    inline_comments.extend(parsed.categorized_comments["straight"][import_key])
 
         output.extend(above_comments)
 
+        combined_straight_imports = ", ".join(combined_imports)
         if inline_comments:
             combined_inline_comments = " ".join(c for c in inline_comments if c)
             if combined_inline_comments:
