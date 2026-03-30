@@ -5376,6 +5376,19 @@ def test_combine_straight_imports() -> None:
         "import sys, os, math\n\nimport a, b\n"
     )
 
+    # test to ensure that aliased straight imports are combined when combine_as_imports is enabled
+    test_input = "import a as b\nimport c as d\n"
+    assert isort.code(
+        test_input, combine_straight_imports=True, combine_as_imports=True
+    ) == "import a as b, c as d\n"
+
+    # test to ensure that mixed straight + aliased imports are combined when combine_as_imports
+    # is enabled
+    test_input = "import a\nimport b as c\n"
+    assert isort.code(
+        test_input, combine_straight_imports=True, combine_as_imports=True
+    ) == "import a, b as c\n"
+
 
 def test_find_imports_in_code() -> None:
     test_input = (
