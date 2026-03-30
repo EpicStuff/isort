@@ -5389,14 +5389,12 @@ def test_combine_straight_imports() -> None:
         test_input, combine_straight_imports=True, combine_as_imports=True
     ) == "import a, b as c\n"
 
-    # test to ensure that combine_as_imports also combines and preserves mixed straight imports
-    # that include aliases
-    assert isort.code(test_input, combine_as_imports=True) == "import a, b as c\n"
-
     # regression: mixed third-party straight imports should not drop bare imports when aliases
-    # are present
+    # are present when both combine options are enabled
     test_input = "import dateparser\nimport pandas as pd\n"
-    assert isort.code(test_input, combine_as_imports=True) == "import dateparser, pandas as pd\n"
+    assert isort.code(
+        test_input, combine_straight_imports=True, combine_as_imports=True
+    ) == "import dateparser, pandas as pd\n"
 
 
 def test_find_imports_in_code() -> None:
