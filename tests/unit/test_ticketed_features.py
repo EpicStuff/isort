@@ -722,6 +722,53 @@ def my_function():
     )
 
 
+
+
+def test_float_to_top_treats_single_line_string_as_top_docstring():
+    assert (
+        isort.code(
+            """'My comment'
+
+
+def my_function():
+    pass
+
+
+import a
+""",
+            float_to_top=True,
+        )
+        == """'My comment'
+import a
+
+
+def my_function():
+    pass
+"""
+    )
+
+    assert (
+        isort.code(
+            '''"My comment"
+
+
+def my_function():
+    pass
+
+
+import a
+''',
+            float_to_top=True,
+        )
+        == '''"My comment"
+import a
+
+
+def my_function():
+    pass
+'''
+    )
+
 def test_api_to_allow_custom_diff_and_output_stream_1583(capsys, tmpdir):
     """isort should provide a way from the Python API to process an existing
     file and output to a stream the new version of that file, as well as a diff
