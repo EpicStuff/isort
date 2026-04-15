@@ -228,7 +228,7 @@ def sorted_imports(
                 if config.profile == "black" and extension == "pyi":  # special case for black
                     lines_after_imports = 1
                 if _is_type_checking_block(next_construct):
-                    lines_after_imports = 0
+                    lines_after_imports = min(lines_after_imports, 1)
                 formatted_output[imports_tail:0] = ["" for line in range(lines_after_imports)]
             elif extension != "pyi" and next_construct.startswith(STATEMENT_DECLARATIONS):
                 formatted_output[imports_tail:0] = ["", ""]

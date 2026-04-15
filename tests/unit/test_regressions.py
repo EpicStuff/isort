@@ -182,6 +182,7 @@ class Something(object):
 def test_lines_after_imports_doesnt_separate_type_checking_block() -> None:
     """Treat a following TYPE_CHECKING block as part of import section spacing."""
     test_input = """from .vars import settings
+
 if TYPE_CHECKING:
     from collections import abc
 """
