@@ -233,10 +233,9 @@ def file_contents(contents: str, config: Config = DEFAULT_CONFIG) -> ParsedConte
 
             attach_comments_to: list[Any] | None = None
             direct_imports = just_imports[1:]
-            straight_import = True
             top_level_module = ""
+            straight_aliases: dict[str, int] = defaultdict(int)
             if "as" in just_imports and (just_imports.index("as") + 1) < len(just_imports):
-                straight_import = False
                 while "as" in just_imports:
                     nested_module = None
                     as_index = just_imports.index("as")
@@ -264,6 +263,7 @@ def file_contents(contents: str, config: Config = DEFAULT_CONFIG) -> ParsedConte
                     else:
                         module = just_imports[as_index - 1]
                         as_name = just_imports[as_index + 1]
+                        straight_aliases[module] += 1
                         if module == as_name and config.remove_redundant_aliases:
                             pass
                         elif as_name not in as_map["straight"][module]:
@@ -286,6 +286,17 @@ def file_contents(contents: str, config: Config = DEFAULT_CONFIG) -> ParsedConte
                                     f"{module} as {as_name}", []
                                 )
                     del just_imports[as_index : as_index + 2]
+
+            straight_direct_imports = set()
+            if type_of_import != "from":
+                straight_import_counts: dict[str, int] = defaultdict(int)
+                for module in just_imports:
+                    straight_import_counts[module] += 1
+                straight_direct_imports = {
+                    module
+                    for module, count in straight_import_counts.items()
+                    if count > straight_aliases.get(module, 0)
+                }
 
             if type_of_import == "from":
                 import_from = just_imports.pop(0)
@@ -427,8 +438,10 @@ def file_contents(contents: str, config: Config = DEFAULT_CONFIG) -> ParsedConte
                     if placed_module and placed_module not in imports:
                         raise MissingSection(import_module=module, section=placed_module)
 
-                    straight_import |= imports[placed_module][type_of_import].get(module, False)
-                    imports[placed_module][type_of_import][module] = straight_import
+                    imports[placed_module][type_of_import][module] = (
+                        imports[placed_module][type_of_import].get(module, False)
+                        or module in straight_direct_imports
+                    )
 
     change_count = len(out_lines) - original_line_count
 

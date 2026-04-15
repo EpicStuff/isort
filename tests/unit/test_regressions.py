@@ -1288,6 +1288,28 @@ from selenium.webdriver import Remote, Remote as Driver
     )
 
 
+def test_mixed_inline_imports_should_keep_non_aliased_across_sections_issue_2740():
+    """Ensure inline imports keep non-aliased modules when one import is aliased."""
+    test_input = "import cashews, numpy as np, sqlite_utils\n"
+    expected_output = "import numpy as np\n\nimport cashews, sqlite_utils\n"
+    assert (
+        isort.code(
+            test_input,
+            combine_as_imports=True,
+            combine_straight_imports=True,
+            known_first_party=["cashews", "sqlite_utils"],
+        )
+        == expected_output
+    )
+
+
+def test_straight_import_with_and_without_alias_keeps_both_issue_2740():
+    """Ensure inline straight imports keep both direct and aliased imports for one module."""
+    test_input = "import numpy, numpy as np\n"
+    expected_output = "import numpy\nimport numpy as np\n"
+    assert isort.code(test_input) == expected_output
+
+
 def test_isort_shouldnt_introduce_syntax_error_issue_1539():
     """isort should NEVER introduce syntax errors.
     In 5.5.4 some strings that contained a line starting with from could lead to no empty paren.
