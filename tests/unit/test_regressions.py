@@ -179,6 +179,14 @@ class Something(object):
     assert isort.code(test_input, lines_after_imports=2) == test_input
 
 
+def test_lines_after_imports_ignored_before_type_checking_block():
+    test_input = """from .vars import settings
+if TYPE_CHECKING:
+    from collections import abc
+"""
+    assert isort.code(test_input, lines_after_imports=2) == test_input
+
+
 def test_force_single_line_shouldnt_remove_preceding_comment_lines_issue_1296():
     """Tests to ensure force_single_line setting doesn't result in lost comments.
     See: https://github.com/pycqa/isort/issues/1296
