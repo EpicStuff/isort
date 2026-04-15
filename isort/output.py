@@ -13,6 +13,11 @@ from .place import module_with_reason
 from .settings import DEFAULT_CONFIG, Config
 
 
+def _is_type_checking_block(line: str) -> bool:
+    stripped_line = line.strip()
+    return stripped_line.startswith(("if TYPE_CHECKING", "if typing.TYPE_CHECKING"))
+
+
 # Ignore DeepSource cyclomatic complexity check for this function.
 # skipcq: PY-R1000
 def sorted_imports(
@@ -222,6 +227,8 @@ def sorted_imports(
                 lines_after_imports = config.lines_after_imports
                 if config.profile == "black" and extension == "pyi":  # special case for black
                     lines_after_imports = 1
+                if _is_type_checking_block(next_construct):
+                    lines_after_imports = 0
                 formatted_output[imports_tail:0] = ["" for line in range(lines_after_imports)]
             elif extension != "pyi" and next_construct.startswith(STATEMENT_DECLARATIONS):
                 formatted_output[imports_tail:0] = ["", ""]
