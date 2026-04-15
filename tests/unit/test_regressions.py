@@ -1985,3 +1985,20 @@ attr as alias  # type: ignore[attr-defined]
         isort.code(short_line, profile="black")
         == "from mod import attr as alias  # type: ignore[attr-defined]  # My comment\n"
     )
+
+
+def test_semicolon_skip_import_stays_in_place_between_import_blocks():
+    test_input = """import asyncio
+from typing import Any
+
+from package import configure; configure(root="src")  # isort: skip
+from third_party import tool
+"""
+    assert (
+        isort.code(test_input)
+        == """import asyncio
+from typing import Any
+from package import configure; configure(root="src")  # isort: skip
+from third_party import tool
+"""
+    )
