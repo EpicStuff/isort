@@ -6,7 +6,7 @@ from typing import TextIO
 import isort.literal
 from isort.settings import DEFAULT_CONFIG, Config
 
-from . import output, parse
+from . import _parse_utils, output, parse
 from .exceptions import ExistingSyntaxErrors, FileSkipComment
 from .format import format_natural, remove_whitespace
 from .settings import FILE_SKIP_COMMENTS
@@ -235,6 +235,14 @@ def process(
                 elif stripped_line in CODE_SORT_COMMENTS:
                     code_sorting = stripped_line.split("isort: ")[1].strip()
                     code_sorting_indent = line[: -len(line.lstrip())]
+                    not_imports = True
+                elif (
+                    ";" in line.split("#", 1)[0]
+                    and _parse_utils.ISORT_SKIP_COMMENT.search(line)
+                ):
+                    # Keep semicolon-separated statements with explicit skip comments in place.
+                    # Treating these as code boundaries preserves the non-import expression side
+                    # of the line and avoids moving the line to the end of the import block.
                     not_imports = True
                 elif config.sort_reexports and stripped_line.startswith("__all__"):
                     _, rhs = stripped_line.split("=")
