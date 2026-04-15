@@ -6,7 +6,7 @@ from typing import TextIO
 import isort.literal
 from isort.settings import DEFAULT_CONFIG, Config
 
-from . import output, parse
+from . import _parse_utils, output, parse
 from .exceptions import ExistingSyntaxErrors, FileSkipComment
 from .format import format_natural, remove_whitespace
 from .settings import FILE_SKIP_COMMENTS
@@ -88,8 +88,14 @@ def process(
                 if line == "# isort: on\n":
                     isort_off = False
                 new_input += line
-            elif line in ("# isort: split\n", "# isort: off\n", None) or str(line).endswith(
-                "# isort: split\n"
+            elif (
+                line in ("# isort: split\n", "# isort: off\n", None)
+                or str(line).endswith("# isort: split\n")
+                or (
+                    line is not None
+                    and ";" in str(line).split("#", 1)[0]
+                    and _parse_utils.ISORT_SKIP_COMMENT.search(str(line))
+                )
             ):
                 if line == "# isort: off\n":
                     isort_off = True
@@ -125,6 +131,8 @@ def process(
         input_stream = StringIO(new_input)
 
     for index, line in enumerate(chain(input_stream, (None,))):
+        skip_line_as_code_boundary = False
+        force_skip_boundary = False
         if line is None:
             if index == 0 and not config.force_adds:
                 return False
@@ -225,7 +233,18 @@ def process(
                         break
                     char_index += 1
 
-            not_imports = bool(in_quote) or was_in_quote or in_top_comment or isort_off
+            force_skip_boundary = bool(
+                ";" in line.split("#", 1)[0]
+                and _parse_utils.ISORT_SKIP_COMMENT.search(line)
+                and not in_top_comment
+                and not isort_off
+                and not in_quote
+                and not was_in_quote
+            )
+            if force_skip_boundary:
+                skip_line_as_code_boundary = True
+
+            not_imports = bool(in_quote) or was_in_quote or in_top_comment or isort_off or force_skip_boundary
             if not (in_quote or was_in_quote or in_top_comment):
                 if isort_off:
                     if not skip_file and stripped_line == "# isort: on":
@@ -236,6 +255,15 @@ def process(
                     code_sorting = stripped_line.split("isort: ")[1].strip()
                     code_sorting_indent = line[: -len(line.lstrip())]
                     not_imports = True
+                elif (
+                    ";" in line.split("#", 1)[0]
+                    and _parse_utils.ISORT_SKIP_COMMENT.search(line)
+                ):
+                    # Keep semicolon-separated statements with explicit skip comments in place.
+                    # Treating these as code boundaries preserves the non-import expression side
+                    # of the line and avoids moving the line to the end of the import block.
+                    not_imports = True
+                    skip_line_as_code_boundary = True
                 elif config.sort_reexports and stripped_line.startswith("__all__"):
                     _, rhs = stripped_line.split("=")
                     code_sorting = LITERAL_TYPE_MAPPING.get(rhs.lstrip()[0], "tuple")
@@ -295,7 +323,7 @@ def process(
                     and stripped_line not in config.treat_comments_as_code
                 ):
                     import_section += line
-                elif stripped_line.startswith(IMPORT_START_IDENTIFIERS):
+                elif not force_skip_boundary and stripped_line.startswith(IMPORT_START_IDENTIFIERS):
                     new_indent = line[: -len(line.lstrip())]
                     import_statement = line
                     stripped_line = line.strip().split("#")[0]
@@ -403,7 +431,7 @@ def process(
                     contains_imports = True
                     add_imports = []
 
-                if not indent:
+                if not indent and not skip_line_as_code_boundary:
                     import_section += line
                     raw_import_section += line
                 if not contains_imports:
@@ -451,6 +479,9 @@ def process(
                         output_stream.write(sorted_import_section)
                         if not line and not indent and next_import_section:
                             output_stream.write(line_separator)
+
+                if skip_line_as_code_boundary:
+                    output_stream.write(line)
 
                 if indent:
                     output_stream.write(line)

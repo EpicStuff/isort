@@ -46,3 +46,17 @@ import a
 import a
 """
     )
+
+
+def test_isort_skip_comment_with_extra_whitespace():
+    assert (
+        isort.code(
+            """import b
+import a  # isort:    skip
+"""
+        )
+        == """import b
+
+import a  # isort:    skip
+"""
+    )

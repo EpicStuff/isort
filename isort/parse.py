@@ -8,6 +8,7 @@ from warnings import warn
 
 from . import place
 from ._parse_utils import (
+    ISORT_SKIP_COMMENT,
     collect_import_continuation,
     import_type,
     normalize_from_import_string,
@@ -144,14 +145,14 @@ def file_contents(contents: str, config: Config = DEFAULT_CONFIG) -> ParsedConte
             else:
                 commentless = line.split("#", 1)[0].strip()
                 if (
-                    ("isort:skip" in line or "isort: skip" in line)
+                    ISORT_SKIP_COMMENT.search(line)
                     and "(" in commentless
                     and ")" not in commentless
                 ):
                     import_index = index
 
                     starting_line = line
-                    while "isort:skip" in starting_line or "isort: skip" in starting_line:
+                    while ISORT_SKIP_COMMENT.search(starting_line):
                         commentless = starting_line.split("#", 1)[0]
                         if (
                             "(" in commentless
