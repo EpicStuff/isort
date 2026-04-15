@@ -2003,3 +2003,25 @@ from package import configure; configure()  # isort: skip
 from third_party import tool
 """
     )
+
+
+def test_semicolon_skip_import_stays_before_following_first_party_block():
+    test_input = """import asyncio, datetime, smtplib
+from email.message import EmailMessage
+from typing import NoReturn
+
+from external import Dict, bootstrap; bootstrap(root='src') if __name__ == '__main__' else None  # isort: skip
+from nicegui import app
+
+from src.dashboard import error_code  # pylint: disable=wrong-import-position
+from src.utils import request_api, settings  # pylint: disable=wrong-import-position
+from .stuff import send_fake_email  # pylint: disable=wrong-import-position
+"""
+    result = isort.code(test_input)
+
+    skipped_line = (
+        "from external import Dict, bootstrap; bootstrap(root='src') if __name__ == '__main__' "
+        "else None  # isort: skip"
+    )
+    assert skipped_line in result
+    assert result.index(skipped_line) < result.index("from nicegui import app")
