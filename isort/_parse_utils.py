@@ -6,6 +6,8 @@ from typing import Literal, NamedTuple
 
 from .settings import Config
 
+ISORT_SKIP_COMMENT = re.compile(r"\bisort:\s*skip\b")
+
 
 class NormalizeLineResult(NamedTuple):
     normalized_line: str
@@ -170,7 +172,7 @@ def import_type(line: str, config: Config) -> Literal["from", "straight"] | None
     """If the current line is an import line it will return its type (from or straight)"""
     if config.honor_noqa and line.lower().rstrip().endswith("noqa"):
         return None
-    if "isort:skip" in line or "isort: skip" in line or "isort: split" in line:
+    if ISORT_SKIP_COMMENT.search(line) or "isort: split" in line:
         return None
     if line.startswith(("import ", "cimport ")):
         return "straight"
