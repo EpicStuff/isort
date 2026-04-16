@@ -233,11 +233,9 @@ def file_contents(contents: str, config: Config = DEFAULT_CONFIG) -> ParsedConte
             ]
 
             attach_comments_to: list[Any] | None = None
-            direct_imports = just_imports[1:]
-            straight_import = True
+            direct_imports = just_imports[1:] if type_of_import == "from" else just_imports.copy()
             top_level_module = ""
             if "as" in just_imports and (just_imports.index("as") + 1) < len(just_imports):
-                straight_import = False
                 while "as" in just_imports:
                     nested_module = None
                     as_index = just_imports.index("as")
@@ -265,6 +263,9 @@ def file_contents(contents: str, config: Config = DEFAULT_CONFIG) -> ParsedConte
                     else:
                         module = just_imports[as_index - 1]
                         as_name = just_imports[as_index + 1]
+                        direct_imports.remove(module)
+                        direct_imports.remove(as_name)
+                        direct_imports.remove("as")
                         if module == as_name and config.remove_redundant_aliases:
                             pass
                         elif as_name not in as_map["straight"][module]:
@@ -428,8 +429,10 @@ def file_contents(contents: str, config: Config = DEFAULT_CONFIG) -> ParsedConte
                     if placed_module and placed_module not in imports:
                         raise MissingSection(import_module=module, section=placed_module)
 
-                    straight_import |= imports[placed_module][type_of_import].get(module, False)
-                    imports[placed_module][type_of_import][module] = straight_import
+                    imports[placed_module][type_of_import][module] = (
+                        imports[placed_module][type_of_import].get(module, False)
+                        or module in direct_imports
+                    )
 
     change_count = len(out_lines) - original_line_count
 

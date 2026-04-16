@@ -5396,6 +5396,12 @@ def test_combine_straight_imports() -> None:
         test_input, combine_straight_imports=True, combine_as_imports=True
     ) == "import dateparser, pandas as pd\n"
 
+    # regression: a module imported both bare and aliased in a single line should preserve both
+    test_input = "import pandas, pandas as pd\n"
+    assert (
+        isort.code(test_input, combine_straight_imports=True, combine_as_imports=True) == test_input
+    )
+
     # regression: a mixed import block should keep non-aliased imports when combining
     test_input = (
         "import asyncio\n"
